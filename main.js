@@ -7,7 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // === SCENA BASE ===
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x13122e);
+scene.background = new THREE.Color(0x7f0f0f); // Colore di sfondo chiaro
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(3, 3, 6);
@@ -269,100 +269,6 @@ createPointCloud(mesh, baseColor, totalPoints);
 
   });
 }
-
-// Array per memorizzare le zone cliccabili
-const clickableZones = [];
-
-// Funzione per creare una zona cliccabile
-function createClickableZone(position, id) {
-  const geometry = new THREE.SphereGeometry(0.1, 16, 16); // Piccola sfera come zona cliccabile
-  const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 }); // Rosso
-  const zone = new THREE.Mesh(geometry, material);
-
-  zone.position.copy(position);
-  zone.userData.id = id; // Assegna un ID unico
-  scene.add(zone);
-  clickableZones.push(zone);
-}
-
-// Funzione per generare posizioni casuali sulla superficie della point cloud
-function generateRandomPositionsOnPointCloud(pointCloud, count) {
-  const positions = [];
-  const geometry = pointCloud.geometry;
-
-  if (geometry.isBufferGeometry) {
-    const positionAttribute = geometry.attributes.position;
-    for (let i = 0; i < count; i++) {
-      const index = Math.floor(Math.random() * positionAttribute.count);
-      const x = positionAttribute.getX(index);
-      const y = positionAttribute.getY(index);
-      const z = positionAttribute.getZ(index);
-      positions.push(new THREE.Vector3(x, y, z));
-    }
-  }
-  return positions;
-}
-
-// Funzione per creare la point cloud e aggiungere le zone cliccabili
-
-
-// Caricamento del modello e creazione della point cloud con zone cliccabili
-function loadModelAndCreatePointCloud(url, config) {
-  loader.load(url, (gltf) => {
-    gltf.scene.traverse(obj => {
-      if (obj.isMesh) {
-        obj.visible = false; // Nascondi il modello originale
-        const pointCloud = createPointCloudWithClickableZones(obj, config); // Crea la point cloud
-        pointClouds.push(pointCloud); // Salva la point cloud
-      }
-    });
-  });
-}
-
-// Aggiungi evento click per le zone cliccabili
-window.addEventListener('click', () => {
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(clickableZones, false);
-
-  if (intersects.length > 0) {
-    const clickedZone = intersects[0].object;
-
-    if (!isFocused) {
-      // Focus sulla zona cliccata
-      const targetPosition = clickedZone.position.clone().add(new THREE.Vector3(0, 0.5, 1.5));
-      gsap.to(camera.position, {
-        x: targetPosition.x,
-        y: targetPosition.y,
-        z: targetPosition.z,
-        duration: 1.5,
-        ease: "power2.inOut"
-      });
-
-      gsap.to(controls.target, {
-        x: clickedZone.position.x,
-        y: clickedZone.position.y,
-        z: clickedZone.position.z,
-        duration: 1.5,
-        ease: "power2.inOut",
-        onUpdate: () => controls.update()
-      });
-
-      isFocused = true;
-    } else {
-      // Torna alla posizione iniziale della camera
-      gsap.to(camera.position, { x: 3, y: 3, z: 6, duration: 1.5, ease: "power2.inOut" });
-      gsap.to(controls.target, {
-        x: 0, y: 1, z: 0, duration: 1.5, ease: "power2.inOut",
-        onUpdate: () => controls.update()
-      });
-
-      isFocused = false;
-    }
-  }
-});
-
-// Carica il modello e crea la point cloud con zone cliccabili
-loadModelAndCreatePointCloud('mod/tnt_0.glb', tntConfig);
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -637,10 +543,7 @@ function deformModelWithMouse({
     pc.geometry.attributes.position.needsUpdate = true;
   });
 }
-
 /////////////////////////
-
-
 // Carica i modelli principali
 modelConfigs.forEach(config => {
   loadModelWithColors(config.url, config.baseColor, config.duplicateColor, config.points, config.scale);
@@ -651,8 +554,6 @@ tntModels.forEach(url => {
   loadModelWithColors(url, tntConfig.baseColor, tntConfig.duplicateColor, tntConfig.points, tntConfig.scale);
 });
 /////////////////////////////////
-
-
 
 const modules = []; // Array per contenere le mesh dei moduli principali
 
@@ -792,7 +693,7 @@ function animateNoiseCloud() {
 animateNoiseCloud();
 
 // Aggiorna i punti della noise cloud e dei modelli
-const newPointCount = 20000; // Numero desiderato di punti
+const newPointCount = 200; // Numero desiderato di punti
 modules.forEach(mesh => {
   if (mesh.userData.isNoiseCloud) {
     updateNoiseCloud(mesh, newPointCount); // Aggiorna i punti della noise cloud
@@ -883,7 +784,6 @@ function generateReverbImpulse(audioContext, duration = 3.0, decay = 2.0) {
 
   return impulse;
 }
-
 // Funzione per applicare un envelope ADSR
 function applyADSR(gainNode, attack = 1.0, decay = 0.5, sustain = 0.2, release = 4.0) {
   const now = audioContext.currentTime;
@@ -893,7 +793,6 @@ function applyADSR(gainNode, attack = 1.0, decay = 0.5, sustain = 0.2, release =
   gainNode.gain.linearRampToValueAtTime(sustain, now + attack + decay); // Decadimento
   gainNode.gain.setTargetAtTime(0, now + attack + decay + sustain, release); // Rilascio lungo
 }
-
 // Funzione per generare un pattern euclideo
 function generateEuclideanPattern(steps, pulses) {
   const pattern = [];
@@ -910,8 +809,6 @@ function generateEuclideanPattern(steps, pulses) {
   pattern.push(...counts);
   return pattern;
 }
-
-
 // Funzione per suonare il micro pattern
 function playMicroPattern(scaleNotes, interval = 200, duration = 5000) {
   if (!audioContext || !oscillator || !gainNode) {
@@ -948,7 +845,6 @@ function playMicroPattern(scaleNotes, interval = 200, duration = 5000) {
     }
   }, duration);
 }
-
 // Funzione per suonare una nota con timeout
 function playNoteWithTimeout(frequency) {
   if (!audioContext || !gainNode || !oscillator) return;
@@ -966,7 +862,6 @@ function playNoteWithTimeout(frequency) {
     }
   }, 3000);
 }
-
 // Listener per attivare il suono al primo click
 window.addEventListener('click', (e) => {
   if (!audioContext) {
@@ -1003,7 +898,6 @@ window.addEventListener('click', (e) => {
   const randomNote = scaleNotes[Math.floor(Math.random() * scaleNotes.length)];
   playNoteWithTimeout(randomNote);
 });
-
 window.addEventListener('click', () => {
   if (!audioContext) {
     // Inizializza AudioContext e nodi audio se non già inizializzati
@@ -1021,7 +915,6 @@ window.addEventListener('click', () => {
   // Avvia il micro-pattern con un timeout di 5 secondi
   playMicroPattern(scaleNotes, 200, 5000); // 200ms di intervallo, 5 secondi di durata
 });
-
 // Listener per il movimento del mouse
 window.addEventListener('mousemove', (e) => {
   if (!audioContext || audioContext.state !== 'running') return;
@@ -1044,60 +937,206 @@ window.addEventListener('mousemove', (e) => {
     delayNode.delayTime.setValueAtTime(normalizedY * 0.5, audioContext.currentTime); // Ritardo tra 0 e 500ms
   }
 });
-
 // Listener per terminare il suono al rilascio del mouse
 window.addEventListener('mouseup', () => {
   if (patternInterval) {
     clearInterval(patternInterval);
     patternInterval = null;
   }
-
   // Applica un rilascio morbido al suono
   if (gainNode) {
     applyADSR(gainNode, 0, 0, 0.2, 1.0); // Solo rilascio lungo
   }
 });
 
-// Funzione per creare un cluster di punti rossi
-function createRedCluster(position, clusterId, clusterSize = 80, radius = 0.18) {
-  const positions = [];
-  for (let i = 0; i < clusterSize; i++) {
-    // Distribuzione sferica attorno alla posizione centrale
-    const phi = Math.random() * Math.PI * 2;
-    const costheta = Math.random() * 2 - 1;
-    const u = Math.random();
+/// ——————————
+// CONFIG ZONE
+// ——————————
+const zoneConfigs = [
+  { id: 'zn_1', type: 'type1', size: 0.09, color: 0xff0000, count: 5 },
+  { id: 'zn_2', type: 'type2', size: 0.09, color: 0x00ff00, count: 5 },
+  { id: 'zn_3', type: 'type3', size: 0.09, color: 0x0000ff, count: 5 },
+  { id: 'zn_4', type: 'type4', size: 0.09, color: 0xffff00, count: 5 },
+  { id: 'zn_5', type: 'type5', size: 0.09, color: 0xff00ff, count: 5 }
+];
 
-    const theta = Math.acos(costheta);
-    const r = radius * Math.cbrt(u);
+const clickZones = [];   // Mesh invisibili per il raycast
+const pointCloudZones = [];  // Points visibili
 
-    const x = position.x + r * Math.sin(theta) * Math.cos(phi);
-    const y = position.y + r * Math.sin(theta) * Math.sin(phi);
-    const z = position.z + r * Math.cos(theta);
+// ——————————
+// CREA ZONE POINT CLOUD
+// ——————————
+function createPointCloudZones(pointClouds, zoneConfigs) {
+  clickZones.length = 0;
+  pointCloudZones.length = 0;
 
-    positions.push(x, y, z);
-  }
+  zoneConfigs.forEach(cfg => {
+    for (let i = 0; i < cfg.count; i++) {
+      // Scegli un punto casuale come centro
+      const pc = pointClouds[i % pointClouds.length];
+      const posArr = pc.geometry.attributes.position.array;
+      const idx = Math.floor(Math.random() * (posArr.length / 3)) * 3;
+      const center = new THREE.Vector3(posArr[idx], posArr[idx + 1], posArr[idx + 2]);
+      const radius = cfg.size;
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      // Genera punti sferici per la zone point cloud
+      const positions = [];
+      const colors = [];
+      const numPoints = 500;  // quanti punti per zona
 
-  const material = new THREE.PointsMaterial({
-    color: 0xff0000,
-    size: 0.06,
-    transparent: true,
-    opacity: 0.95,
-    depthWrite: false
+      for (let p = 0; p < numPoints; p++) {
+        // Punto casuale dentro sfera
+        let point;
+        do {
+          point = new THREE.Vector3(
+            (Math.random() * 2 - 1),
+            (Math.random() * 2 - 1),
+            (Math.random() * 2 - 1)
+          );
+        } while (point.length() > 1);
+
+        point.multiplyScalar(radius);
+        point.add(center);
+
+        positions.push(point.x, point.y, point.z);
+
+        const color = new THREE.Color(cfg.color);
+        colors.push(color.r, color.g, color.b);
+      }
+
+      // BufferGeometry point cloud visibile
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: radius * 0.15,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false
+      });
+
+      const points = new THREE.Points(geo, mat);
+      scene.add(points);
+      pointCloudZones.push(points);
+
+      // Mesh invisibile per raycast (sphere)
+      const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
+      const sphereMat = new THREE.MeshBasicMaterial({ visible: false });
+      const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      sphereMesh.position.copy(center);
+      sphereMesh.userData = {
+        id: `${cfg.id}_${i + 1}`,
+        type: cfg.type,
+        color: cfg.color,
+        center: center.clone(),
+        radius: radius
+      };
+      scene.add(sphereMesh);
+      clickZones.push(sphereMesh);
+    }
   });
-
-  const cluster = new THREE.Points(geometry, material);
-  cluster.userData.isRedCluster = true;
-  cluster.userData.clusterId = clusterId;
-  cluster.userData.center = position.clone();
-
-  scene.add(cluster);
-  clickableZones.push(cluster);
 }
 
-// Esempio di utilizzo: crea un cluster di punti rossi
-createRedCluster(new THREE.Vector3(0, 1, 0), 'cluster1', 100, 0.2);
+// ——————————
+// PARTICLE EMITTER AL CLICK
+// ——————————
+const activeParticles = [];
+function emitParticles(center, color) {
+  const count = 30;
+  for (let i = 0; i < count; i++) {
+    const geom = new THREE.SphereGeometry(0.005, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
+    const p = new THREE.Mesh(geom, mat);
+    p.position.copy(center);
+    p.userData.velocity = new THREE.Vector3(
+      (Math.random() * 2 - 1) * 0.02,
+      (Math.random() * 2 - 1) * 0.02,
+      (Math.random() * 2 - 1) * 0.02
+    );
+    scene.add(p);
+    activeParticles.push(p);
+  }
+}
 
+// ——————————
+// CLICK E INQUADRATURA CAMERA
+// ——————————
+function setupClickHandler(camera, controls, renderer) {
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let originalCamPos = camera.position.clone();
+  let originalTarget = controls.target.clone();
+  let zoomedZone = null;
 
+  renderer.domElement.addEventListener('click', e => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(clickZones, false);
+
+    if (intersects.length) {
+      const zone = intersects[0].object;
+      const { center, radius, color, id } = zone.userData;
+
+      console.log('Zona cliccata:', id);
+
+      emitParticles(center, color);
+
+      if (!zoomedZone) {
+        originalCamPos.copy(camera.position);
+        originalTarget.copy(controls.target);
+      }
+      zoomedZone = id;
+
+      const fov = camera.fov * (Math.PI / 180);
+      const dist = radius / Math.sin(fov / 2) * 1.2;
+      const dir = new THREE.Vector3().subVectors(camera.position, center).normalize();
+      const newCamPos = center.clone().add(dir.multiplyScalar(dist));
+
+      controls.enabled = false;
+      gsap.to(camera.position, {
+        x: newCamPos.x,
+        y: newCamPos.y,
+        z: newCamPos.z,
+        duration: 1.5,
+        ease: 'power2.inOut'
+      });
+      gsap.to(controls.target, {
+        x: center.x,
+        y: center.y,
+        z: center.z,
+        duration: 1.5,
+        ease: 'power2.inOut',
+        onComplete: () => (controls.enabled = true)
+      });
+    } else if (zoomedZone) {
+      zoomedZone = null;
+      controls.enabled = false;
+      gsap.to(camera.position, {
+        x: originalCamPos.x,
+        y: originalCamPos.y,
+        z: originalCamPos.z,
+        duration: 1.5,
+        ease: 'power2.inOut'
+      });
+      gsap.to(controls.target, {
+        x: originalTarget.x,
+        y: originalTarget.y,
+        z: originalTarget.z,
+        duration: 1.5,
+        ease: 'power2.inOut',
+        onComplete: () => (controls.enabled = true)
+      });
+    }
+  });
+}
+
+setTimeout(() => {
+  createPointCloudZones(pointClouds, zoneConfigs);
+  setupClickHandler(camera, controls, renderer);
+  animate();
+}, 2000);
